@@ -1,0 +1,54 @@
+services:
+  invokeai_rocm:
+
+    ### Basic Docker Configuration
+    # ------------------------------------------------------------------  
+    build: .
+    container_name: invokeai-rocm
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+    environment:
+      - INVOKEAI_MAX_CACHE_RAM_GB=${MAX_CACHE_RAM_GB}
+      - INVOKEAI_MAX_CACHE_VRAM_GB=${MAX_CACHE_VRAM_GB}
+      - INVOKEAI_PRECISION=${PRECISION}
+
+    ports:
+      - ${INVOKE_PORT:-9090}:9090
+
+    volumes:
+      - ${OUTPUTS_DIR}:/app/invokeai/outputs
+      - ${MODELS_DIR}:/app/invokeai/models
+      - ./storage/profiles:/app/invokeai/profiles
+      - ./storage/huggingface:/app/invokeai/.cache/huggingface
+      - ./storage/databases:/app/invokeai/databases
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+    ### ROCm GPU Access Configuration
+    # ------------------------------------------------------------------
+
+    # Pass through necessary GPU devices
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+
+    # Add the container to the necessary host groups for device access
+    group_add:
+      - ${VIDEO_GROUP_ID}
+      - ${RENDER_GROUP_ID}
+
+    # Shared memory settings that are meant to stabilize the container
+    ipc: host
+    shm_size: 8G
+
+    # Ensure the container has the necessary privileges for ROCm devices
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
