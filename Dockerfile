@@ -25,6 +25,8 @@ RUN npx vite build
 # Use the official ROCm PyTorch image. This image includes a pre-built,
 # ROCm-enabled version of PyTorch, which is critical for stability.
 FROM rocm/pytorch:rocm7.1.1_ubuntu24.04_py3.12_pytorch_release_2.9.1 AS app
+ENV INVOKEAI_DIR=/app/invokeai
+ENV INVOKEAI_ROOT=${INVOKEAI_DIR}
 
 # --- ROCm Runtime Architecture ---
 # Ensures the runtime knows exactly which hardware to target, 
@@ -41,6 +43,7 @@ ENV CUDA_VISIBLE_DEVICES=""
 ENV PYTORCH_ALLOC_CONF=max_split_size_mb:256
 ENV PYTORCH_HIP_ALLOC_CONF=max_split_size_mb:256
 ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:256
+ENV INVOKEAI_PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:256
 
 # --- Speed & Kernel Optimizations ---
 # Enables modern matrix multiplication libraries (significant boost for RDNA3)
@@ -48,6 +51,8 @@ ENV ROCBLAS_USE_HIPBLASLT=1
 # Enables PyTorch to auto-tune kernels for our specific chip (new in ROCm 7.x)
 # ! Unfortunately it causes infinite hangs on gfx1151 VAE decoding. So it is disabled for now.
 ENV PYTORCH_TUNABLEOP_ENABLED=0
+# Enables experimental memory efficient attention
+ENV TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
 # Fixes ROCm 7 VAE speed issues (MIOpen has performance bugs on ROCm 7)
 ENV MIOPEN_FIND_MODE=FAST
 # Includes script in pythonstartup that disables cudnn to effectively disable MIOPEN and fix the performance issues during VAE decoding.
@@ -69,25 +74,6 @@ ENV HSA_DISABLE_FRAGMENT_ALLOCATOR=1
 ENV PYTHONUNBUFFERED=1
 # Prevents Python from creating annoying __pycache__ directories in your mapped volumes
 ENV PYTHONDONTWRITEBYTECODE=1
-
-# --- InvokeAI Configuration ---
-# General
-ENV INVOKEAI_DIR=/app/invokeai
-ENV INVOKEAI_ROOT=${INVOKEAI_DIR}
-ENV INVOKEAI_HOST=0.0.0.0
-ENV INVOKEAI_PORT=9090
-# Directory Paths
-ENV INVOKEAI_OUTPUTS_DIR=/app/invokeai/outputs
-ENV INVOKEAI_MODELS_DIR=/app/invokeai/models
-ENV INVOKEAI_PROFILES_DIR=/app/invokeai/profiles
-# Memory Management
-ENV INVOKEAI_DEVICE_WORKING_MEM_GB=4
-# Optimizations / Fixes
-ENV INVOKEAI_FORCE_TILED_DECODE=false
-ENV INVOKEAI_TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
-ENV INVOKEAI_ENABLE_PARTIAL_LOADING=false
-ENV INVOKEAI_KEEP_RAM_COPY_OF_WEIGHTS=false
-ENV INVOKEAI_PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:256
 
 
 

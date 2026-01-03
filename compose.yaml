@@ -12,7 +12,6 @@ services:
     environment:
       - INVOKEAI_MAX_CACHE_RAM_GB=${MAX_CACHE_RAM_GB}
       - INVOKEAI_MAX_CACHE_VRAM_GB=${MAX_CACHE_VRAM_GB}
-      - INVOKEAI_PRECISION=${PRECISION}
 
     ports:
       - ${INVOKE_PORT:-9090}:9090
@@ -23,6 +22,10 @@ services:
       - ./storage/profiles:/app/invokeai/profiles
       - ./storage/huggingface:/app/invokeai/.cache/huggingface
       - ./storage/databases:/app/invokeai/databases
+      - ./storage/style_presets:/app/invokeai/style_presets
+      - ./storage/nodes:/app/invokeai/nodes
+      - ./storage/workflow_thumbnails:/app/invokeai/workflow_thumbnails
+      - ./invokeai.yaml:/app/invokeai/invokeai.yaml
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9090"]
